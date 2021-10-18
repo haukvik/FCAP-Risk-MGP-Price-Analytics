@@ -1,0 +1,32 @@
+{
+	"name": "pl_optimize_prices_lake",
+	"properties": {
+		"description": "Optimizes the delta lake for performance.",
+		"activities": [
+			{
+				"name": "Optimize Silver and Gold delta tables",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Shared/Dev/Price Analytics/0 - Includes/optimize_lake"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_fcap_prices",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"concurrency": 1,
+		"annotations": [],
+		"lastPublishTime": "2021-10-18T11:09:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

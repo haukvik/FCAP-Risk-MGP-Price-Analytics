@@ -1,0 +1,46 @@
+{
+	"name": "tr_execute_price_process_workdays",
+	"properties": {
+		"description": "Executes the price process during working days",
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_execute_price_process",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"p_process_date": "@trigger().startTime"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2021-10-16T00:00:00",
+				"timeZone": "Romance Standard Time",
+				"schedule": {
+					"minutes": [
+						50
+					],
+					"hours": [
+						6,
+						8,
+						10,
+						13
+					],
+					"weekDays": [
+						"Monday",
+						"Tuesday",
+						"Wednesday",
+						"Thursday",
+						"Friday"
+					]
+				}
+			}
+		}
+	}
+}

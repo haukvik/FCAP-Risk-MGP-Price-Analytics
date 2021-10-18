@@ -1,0 +1,35 @@
+{
+	"name": "tr_execute_prices_optimization",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_optimize_prices_lake",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Week",
+				"interval": 1,
+				"startTime": "2021-10-18T06:35:00",
+				"timeZone": "Romance Standard Time",
+				"schedule": {
+					"minutes": [
+						35
+					],
+					"hours": [
+						6
+					],
+					"weekDays": [
+						"Monday"
+					]
+				}
+			}
+		}
+	}
+}
