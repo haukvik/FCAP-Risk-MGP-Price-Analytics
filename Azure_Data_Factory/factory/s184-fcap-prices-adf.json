@@ -1,0 +1,17 @@
+{
+	"name": "s184-fcap-prices-adf",
+	"properties": {
+		"globalParameters": {
+			"days_to_retrieve": {
+				"type": "int",
+				"value": 5
+			}
+		}
+	},
+	"location": "northeurope",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "1ca1eeb2-b36f-4bb4-8036-cb2244064e3c",
+		"tenantId": "3aa4a235-b6e2-48d5-9195-7fcf05b459b0"
+	}
+}
