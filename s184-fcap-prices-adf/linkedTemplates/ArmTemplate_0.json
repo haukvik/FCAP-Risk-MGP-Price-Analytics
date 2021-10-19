@@ -27,13 +27,7 @@
 					"domain": "https://adb-6576666640356423.3.azuredatabricks.net",
 					"authentication": "MSI",
 					"workspaceResourceId": "/subscriptions/96e2123f-3c65-45a1-9416-416bd7e568fb/resourceGroups/S184-mmpfcaprg-risk/providers/Microsoft.Databricks/workspaces/s184-fcap-risk-databricks",
-					"instancePoolId": "1019-085856-adore869-pool-oz2ti65j",
-					"newClusterNumOfWorker": "1",
-					"newClusterSparkEnvVars": {
-						"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
-					},
-					"newClusterVersion": "9.1.x-scala2.12",
-					"newClusterInitScripts": []
+					"existingClusterId": "0915-090236-nab179"
 				}
 			},
 			"dependsOn": []

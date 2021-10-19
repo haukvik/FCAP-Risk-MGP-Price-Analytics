@@ -1,0 +1,32 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "s184-fcap-prices-adf"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_databricks_fcap_prices')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-6576666640356423.3.azuredatabricks.net",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/96e2123f-3c65-45a1-9416-416bd7e568fb/resourceGroups/S184-mmpfcaprg-risk/providers/Microsoft.Databricks/workspaces/s184-fcap-risk-databricks",
+					"existingClusterId": "0915-090236-nab179"
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
