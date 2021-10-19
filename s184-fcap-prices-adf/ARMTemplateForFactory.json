@@ -1,0 +1,608 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "s184-fcap-prices-adf"
+		},
+		"tr_execute_price_process_workdays_properties_pl_execute_price_process_parameters_p_process_date": {
+			"type": "string",
+			"defaultValue": "@trigger().startTime"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_execute_price_process')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Execute Ingestion",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_ingest_prices",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_process_date": {
+									"value": "@pipeline().parameters.p_process_date",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "Execute Price Processing",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Execute Ingestion",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_process_prices",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_process_date": {
+									"value": "@pipeline().parameters.p_process_date",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					{
+						"name": "Execute Price Expose",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Execute Price Processing",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_expose_prices",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"p_process_date": {
+									"value": "@pipeline().parameters.p_process_date",
+									"type": "Expression"
+								}
+							}
+						}
+					}
+				],
+				"concurrency": 1,
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"p_process_date": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-10-17T06:49:03Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_ingest_prices')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_process_prices')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_expose_prices')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_expose_prices')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Load from silver layer, perform analytics, and store to gold layer.",
+				"activities": [
+					{
+						"name": "Compare Prices",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/Dev/Price Analytics/3 - Expose (gold)/1_Compare_prices",
+							"baseParameters": {
+								"p_compare_to_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								},
+								"p_compare_from_date": {
+									"value": "@formatDateTime(subtractFromTime(pipeline().parameters.p_process_date, 2, 'Day'), 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_fcap_prices",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"concurrency": 1,
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"p_process_date": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-10-16T04:45:23Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_ingest_prices')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Ingest prices from external sources and save to bronze layer.",
+				"activities": [
+					{
+						"name": "Ingest EEX prices",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/Dev/Price Analytics/1 - Ingest (bronze)/2_Ingest_EEX_(SFTP)",
+							"baseParameters": {
+								"p_datasource_name": {
+									"value": "@variables('v_datasource_eex')",
+									"type": "Expression"
+								},
+								"p_ingest_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								},
+								"p_start_date": {
+									"value": "@formatDateTime(subtractFromTime(pipeline().parameters.p_process_date, pipeline().globalParameters.days_to_retrieve, 'Day'), 'yyyy-MM-dd')",
+									"type": "Expression"
+								},
+								"p_end_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_fcap_prices",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Ingest Endur Historical prices",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/Dev/Price Analytics/1 - Ingest (bronze)/1_Ingest_Endur_Historical",
+							"baseParameters": {
+								"p_datasource_name": {
+									"value": "@variables('v_datasource_endur_hist')",
+									"type": "Expression"
+								},
+								"p_ingest_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								},
+								"p_start_date": {
+									"value": "@formatDateTime(subtractFromTime(pipeline().parameters.p_process_date, pipeline().globalParameters.days_to_retrieve, 'Day'), 'yyyy-MM-dd')",
+									"type": "Expression"
+								},
+								"p_end_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_fcap_prices",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Ingest ICIS API prices",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/Dev/Price Analytics/1 - Ingest (bronze)/3_Ingest_ICIS_API",
+							"baseParameters": {
+								"p_datasource_name": {
+									"value": "@variables('v_datasource_icis')",
+									"type": "Expression"
+								},
+								"p_ingest_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								},
+								"p_start_date": {
+									"value": "@formatDateTime(subtractFromTime(pipeline().parameters.p_process_date, pipeline().globalParameters.days_to_retrieve, 'Day'), 'yyyy-MM-dd')",
+									"type": "Expression"
+								},
+								"p_end_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_fcap_prices",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"concurrency": 1,
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"p_process_date": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"v_datasource_eex": {
+						"type": "String",
+						"defaultValue": "EEX DataSource SFTP"
+					},
+					"v_datasource_endur_hist": {
+						"type": "String",
+						"defaultValue": "Endur Historical"
+					},
+					"v_datasource_icis": {
+						"type": "String",
+						"defaultValue": "ICIS API"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-10-17T06:49:02Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_optimize_prices_lake')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Optimizes the delta lake for performance.",
+				"activities": [
+					{
+						"name": "Optimize Silver and Gold delta tables",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/Dev/Price Analytics/0 - Includes/optimize_lake"
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_fcap_prices",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"concurrency": 1,
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-10-18T11:09:26Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_process_prices')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Load from bronze layer, process, and store to silver layer.",
+				"activities": [
+					{
+						"name": "Process EEX prices",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/Dev/Price Analytics/2 - Process (silver)/2_Process_EEX",
+							"baseParameters": {
+								"p_datasource_name": {
+									"value": "@variables('v_datasource_eex')",
+									"type": "Expression"
+								},
+								"p_ingest_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_fcap_prices",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Process Endur Historical prices",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/Dev/Price Analytics/2 - Process (silver)/1_Process_Endur_Historical",
+							"baseParameters": {
+								"p_datasource_name": {
+									"value": "@variables('v_datasource_endur_hist')",
+									"type": "Expression"
+								},
+								"p_ingest_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_fcap_prices",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Process ICIS API prices",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/Dev/Price Analytics/2 - Process (silver)/3_Process_ICIS_API",
+							"baseParameters": {
+								"p_datasource_name": {
+									"value": "@variables('v_datasource_icis')",
+									"type": "Expression"
+								},
+								"p_ingest_date": {
+									"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_fcap_prices",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"concurrency": 1,
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"p_process_date": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"v_datasource_eex": {
+						"type": "String",
+						"defaultValue": "EEX DataSource SFTP"
+					},
+					"v_datasource_endur_hist": {
+						"type": "String",
+						"defaultValue": "Endur Historical"
+					},
+					"v_datasource_icis": {
+						"type": "String",
+						"defaultValue": "ICIS API"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-10-16T11:45:08Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_databricks_fcap_prices')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-6576666640356423.3.azuredatabricks.net",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/96e2123f-3c65-45a1-9416-416bd7e568fb/resourceGroups/S184-mmpfcaprg-risk/providers/Microsoft.Databricks/workspaces/s184-fcap-risk-databricks",
+					"instancePoolId": "1019-085856-adore869-pool-oz2ti65j",
+					"newClusterNumOfWorker": "1",
+					"newClusterSparkEnvVars": {
+						"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+					},
+					"newClusterVersion": "9.1.x-scala2.12",
+					"newClusterInitScripts": []
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_execute_price_process_workdays')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Executes the price process during working days",
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pl_execute_price_process",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"p_process_date": "[parameters('tr_execute_price_process_workdays_properties_pl_execute_price_process_parameters_p_process_date')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Week",
+						"interval": 1,
+						"startTime": "2021-10-16T00:00:00",
+						"timeZone": "Romance Standard Time",
+						"schedule": {
+							"minutes": [
+								50
+							],
+							"hours": [
+								6,
+								8,
+								10,
+								13
+							],
+							"weekDays": [
+								"Monday",
+								"Tuesday",
+								"Wednesday",
+								"Thursday",
+								"Friday"
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_execute_price_process')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_execute_prices_optimization')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pl_optimize_prices_lake",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Week",
+						"interval": 1,
+						"startTime": "2021-10-18T06:35:00",
+						"timeZone": "Romance Standard Time",
+						"schedule": {
+							"minutes": [
+								35
+							],
+							"hours": [
+								6
+							],
+							"weekDays": [
+								"Monday"
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_optimize_prices_lake')]"
+			]
+		}
+	]
+}
