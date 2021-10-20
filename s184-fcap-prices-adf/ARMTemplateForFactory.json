@@ -146,7 +146,7 @@
 							}
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_databricks_fcap_prices",
+							"referenceName": "ls_databricks_fcap_prices_job",
 							"type": "LinkedServiceReference"
 						}
 					}
@@ -165,7 +165,7 @@
 				"lastPublishTime": "2021-10-16T04:45:23Z"
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices')]"
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices_job')]"
 			]
 		},
 		{
@@ -209,7 +209,7 @@
 							}
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_databricks_fcap_prices",
+							"referenceName": "ls_databricks_fcap_prices_job",
 							"type": "LinkedServiceReference"
 						}
 					},
@@ -247,7 +247,7 @@
 							}
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_databricks_fcap_prices",
+							"referenceName": "ls_databricks_fcap_prices_job",
 							"type": "LinkedServiceReference"
 						}
 					},
@@ -285,7 +285,7 @@
 							}
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_databricks_fcap_prices",
+							"referenceName": "ls_databricks_fcap_prices_job",
 							"type": "LinkedServiceReference"
 						}
 					}
@@ -318,7 +318,7 @@
 				"lastPublishTime": "2021-10-17T06:49:02Z"
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices')]"
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices_job')]"
 			]
 		},
 		{
@@ -344,7 +344,7 @@
 							"notebookPath": "/Shared/Dev/Price Analytics/0 - Includes/optimize_lake"
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_databricks_fcap_prices",
+							"referenceName": "ls_databricks_fcap_prices_job",
 							"type": "LinkedServiceReference"
 						}
 					}
@@ -358,7 +358,7 @@
 				"lastPublishTime": "2021-10-18T11:09:26Z"
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices')]"
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices_job')]"
 			]
 		},
 		{
@@ -394,7 +394,7 @@
 							}
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_databricks_fcap_prices",
+							"referenceName": "ls_databricks_fcap_prices_job",
 							"type": "LinkedServiceReference"
 						}
 					},
@@ -424,7 +424,7 @@
 							}
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_databricks_fcap_prices",
+							"referenceName": "ls_databricks_fcap_prices_job",
 							"type": "LinkedServiceReference"
 						}
 					},
@@ -454,7 +454,7 @@
 							}
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_databricks_fcap_prices",
+							"referenceName": "ls_databricks_fcap_prices_job",
 							"type": "LinkedServiceReference"
 						}
 					}
@@ -487,24 +487,8 @@
 				"lastPublishTime": "2021-10-16T11:45:08Z"
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices')]"
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_fcap_prices_job')]"
 			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ls_databricks_fcap_prices')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureDatabricks",
-				"typeProperties": {
-					"domain": "https://adb-6576666640356423.3.azuredatabricks.net",
-					"authentication": "MSI",
-					"workspaceResourceId": "/subscriptions/96e2123f-3c65-45a1-9416-416bd7e568fb/resourceGroups/S184-mmpfcaprg-risk/providers/Microsoft.Databricks/workspaces/s184-fcap-risk-databricks",
-					"existingClusterId": "0915-090236-nab179"
-				}
-			},
-			"dependsOn": []
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/ls_databricks_fcap_prices_job')]",
