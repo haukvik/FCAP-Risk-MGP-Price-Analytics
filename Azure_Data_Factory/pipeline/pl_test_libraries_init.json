@@ -16,14 +16,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/0 - Includes/library_test",
-					"libraries": [
-						{
-							"pypi": {
-								"package": ""
-							}
-						}
-					]
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/0 - Includes/library_test"
 				},
 				"linkedServiceName": {
 					"referenceName": "ls_databricks_fcap_prices_job",
