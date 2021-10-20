@@ -7,16 +7,16 @@
 # COMMAND ----------
 
 # Defining input parameters
-dbutils.widgets.text("p_ingest_date", "2021-10-14")
+dbutils.widgets.text("p_ingest_date", "")
 v_ingest_date = dbutils.widgets.get("p_ingest_date")
 
-dbutils.widgets.text("p_datasource_name", "EEX DataSource SFTP")
+dbutils.widgets.text("p_datasource_name", "")
 v_datasource_name = dbutils.widgets.get("p_datasource_name")
 
-dbutils.widgets.text("p_end_date", "2021-10-13")
+dbutils.widgets.text("p_end_date", "")
 v_end_date = dbutils.widgets.get("p_end_date")
 
-dbutils.widgets.text("p_start_date", "2021-10-13")
+dbutils.widgets.text("p_start_date", "")
 v_start_date = dbutils.widgets.get("p_start_date")
 
 # COMMAND ----------

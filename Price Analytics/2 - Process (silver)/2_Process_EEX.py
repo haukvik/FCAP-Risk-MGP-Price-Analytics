@@ -3,7 +3,7 @@
 dbutils.widgets.text("p_ingest_date", "")
 v_ingest_date = dbutils.widgets.get("p_ingest_date")
 
-dbutils.widgets.text("p_datasource_name", "EEX DataSource SFTP")
+dbutils.widgets.text("p_datasource_name", "")
 v_datasource_name = dbutils.widgets.get("p_datasource_name")
 
 # COMMAND ----------
