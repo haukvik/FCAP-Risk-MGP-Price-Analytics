@@ -9,7 +9,7 @@
 # COMMAND ----------
 
 # Defining input parameters
-dbutils.widgets.text("p_datasource_name", "Endur Historical")
+dbutils.widgets.text("p_datasource_name", "")
 v_datasource_name = dbutils.widgets.get("p_datasource_name")
 
 dbutils.widgets.text("p_ingest_date", "")
