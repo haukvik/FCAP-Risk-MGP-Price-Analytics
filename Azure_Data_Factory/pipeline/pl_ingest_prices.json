@@ -16,7 +16,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/1 - Ingest (bronze)/2_Ingest_EEX_(SFTP)",
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/1 - Ingest (bronze)/2_Ingest_EEX_(SFTP)",
 					"baseParameters": {
 						"p_datasource_name": {
 							"value": "@variables('v_datasource_eex')",
@@ -54,7 +54,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/1 - Ingest (bronze)/1_Ingest_Endur_Historical",
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/1 - Ingest (bronze)/1_Ingest_Endur_Historical",
 					"baseParameters": {
 						"p_datasource_name": {
 							"value": "@variables('v_datasource_endur_hist')",
@@ -92,7 +92,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/1 - Ingest (bronze)/3_Ingest_ICIS_API",
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/1 - Ingest (bronze)/3_Ingest_ICIS_API",
 					"baseParameters": {
 						"p_datasource_name": {
 							"value": "@variables('v_datasource_icis')",
