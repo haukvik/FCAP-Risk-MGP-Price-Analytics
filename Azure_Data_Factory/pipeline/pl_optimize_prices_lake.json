@@ -19,7 +19,7 @@
 					"notebookPath": "/Shared/Dev/Price Analytics/0 - Includes/optimize_lake"
 				},
 				"linkedServiceName": {
-					"referenceName": "ls_databricks_fcap_prices",
+					"referenceName": "ls_databricks_fcap_prices_job",
 					"type": "LinkedServiceReference"
 				}
 			}
