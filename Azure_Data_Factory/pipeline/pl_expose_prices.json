@@ -29,7 +29,7 @@
 					}
 				},
 				"linkedServiceName": {
-					"referenceName": "ls_databricks_fcap_prices",
+					"referenceName": "ls_databricks_fcap_prices_job",
 					"type": "LinkedServiceReference"
 				}
 			}

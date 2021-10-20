@@ -1,10 +1,10 @@
 {
-	"name": "pl_optimize_prices_lake",
+	"name": "pl_test_libraries_init",
 	"properties": {
-		"description": "Optimizes the delta lake for performance.",
+		"description": "testing of init scripts on job clusters to install required libraries",
 		"activities": [
 			{
-				"name": "Optimize Silver and Gold delta tables",
+				"name": "test_libraries",
 				"type": "DatabricksNotebook",
 				"dependsOn": [],
 				"policy": {
@@ -16,7 +16,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/0 - Includes/optimize_lake"
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/0 - Includes/library_test"
 				},
 				"linkedServiceName": {
 					"referenceName": "ls_databricks_fcap_prices_job",
@@ -24,9 +24,6 @@
 				}
 			}
 		],
-		"concurrency": 1,
-		"annotations": [],
-		"lastPublishTime": "2021-10-18T11:09:26Z"
-	},
-	"type": "Microsoft.DataFactory/factories/pipelines"
+		"annotations": []
+	}
 }
