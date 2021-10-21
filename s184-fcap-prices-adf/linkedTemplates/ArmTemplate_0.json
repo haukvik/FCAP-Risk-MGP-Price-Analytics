@@ -28,7 +28,7 @@
 					"authentication": "MSI",
 					"workspaceResourceId": "/subscriptions/96e2123f-3c65-45a1-9416-416bd7e568fb/resourceGroups/S184-mmpfcaprg-risk/providers/Microsoft.Databricks/workspaces/s184-fcap-risk-databricks",
 					"newClusterNodeType": "Standard_DS3_v2",
-					"newClusterNumOfWorker": "1",
+					"newClusterNumOfWorker": "1:3",
 					"newClusterSparkEnvVars": {
 						"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
 					},
