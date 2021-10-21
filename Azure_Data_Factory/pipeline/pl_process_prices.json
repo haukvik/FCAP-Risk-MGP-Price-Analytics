@@ -16,7 +16,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/2 - Process (silver)/2_Process_EEX",
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/2 - Process (silver)/2_Process_EEX",
 					"baseParameters": {
 						"p_datasource_name": {
 							"value": "@variables('v_datasource_eex')",
@@ -46,7 +46,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/2 - Process (silver)/1_Process_Endur_Historical",
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/2 - Process (silver)/1_Process_Endur_Historical",
 					"baseParameters": {
 						"p_datasource_name": {
 							"value": "@variables('v_datasource_endur_hist')",
@@ -76,7 +76,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/2 - Process (silver)/3_Process_ICIS_API",
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/2 - Process (silver)/3_Process_ICIS_API",
 					"baseParameters": {
 						"p_datasource_name": {
 							"value": "@variables('v_datasource_icis')",

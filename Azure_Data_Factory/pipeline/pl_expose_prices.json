@@ -16,7 +16,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/3 - Expose (gold)/1_Compare_prices",
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/3 - Expose (gold)/1_Compare_prices",
 					"baseParameters": {
 						"p_compare_to_date": {
 							"value": "@formatDateTime(pipeline().parameters.p_process_date, 'yyyy-MM-dd')",

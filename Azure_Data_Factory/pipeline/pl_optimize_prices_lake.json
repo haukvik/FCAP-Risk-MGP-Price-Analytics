@@ -16,7 +16,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/Dev/Price Analytics/0 - Includes/optimize_lake"
+					"notebookPath": "/Repos/chauk@equinor.com/FCAP-Risk-MGP-Price-Reconciliation/Price Analytics/0 - Includes/optimize_lake"
 				},
 				"linkedServiceName": {
 					"referenceName": "ls_databricks_fcap_prices_job",
