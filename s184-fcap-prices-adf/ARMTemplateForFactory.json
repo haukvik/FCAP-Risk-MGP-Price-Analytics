@@ -521,7 +521,7 @@
 			"properties": {
 				"description": "Executes the price process during working days",
 				"annotations": [],
-				"runtimeState": "Stopped",
+				"runtimeState": "Started",
 				"pipelines": [
 					{
 						"pipelineReference": {
