@@ -40,30 +40,11 @@ import re
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Load Bronze Endur parquet prices
+# MAGIC ## Load Bronze Endur prices
 
 # COMMAND ----------
 
-# Define Endur bronze schema
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType, DateType, TimestampType
-
-endur_schema = StructType(fields=[StructField('commodity', StringType(), False),
-                                  StructField('index_name', StringType(), False),
-                                  StructField('publication', StringType(), False),
-                                  StructField('pub_date', DateType(), False),
-                                  StructField('end_date', DateType(), False),
-                                  StructField('price', DoubleType(), False),
-                                  StructField('currency', StringType(), False),
-                                  StructField('unit', StringType(), False),
-                                  StructField('last_update', TimestampType(), False)
-                                 ])
-
-process_DF = spark.read.schema(endur_schema).parquet(process_path)
-
-# COMMAND ----------
-
-# Renaming column for specificity
-process_DF = process_DF.withColumnRenamed('last_update', 'src_last_update')
+process_DF = spark.read.parquet(process_path)
 
 # COMMAND ----------
 
@@ -235,7 +216,7 @@ endur_df['start_date'] = endur_df['start_date'].astype('datetime64[ns]')
 
 endur_df['price_bid'] = np.nan # only mid prices as default
 endur_df['price_offer'] = np.nan
-endur_df['src_price_id'] = endur_df['index_name'].copy(deep=True) # using index name as price id
+endur_df['ext_price_id'] = endur_df['index_name'].copy(deep=True) # using index name as external system id
 
 endur_df['period_rel'] = '' # To be added later if necessary
 
@@ -385,7 +366,7 @@ endur_df['price_uk'] = (endur_df['publication_name'] + '/'
                         + endur_df['currency'] + '/'
                         + endur_df['unit'])
 
-endur_df['period_abs'] = '' # can add logic to infer this if desired
+endur_df['period_abs'] = ''
 
 # Re-ordering columns
 endur_df = endur_df[['price_uk',
@@ -406,8 +387,8 @@ endur_df = endur_df[['price_uk',
                      'price_offer', 
                      'currency', 
                      'unit', 
-                     'src_last_update', 
-                     'src_price_id']]
+                     'last_update', 
+                     'ext_price_id']]
 
 # COMMAND ----------
 
@@ -425,11 +406,11 @@ def inconsistent_prices(input_df):
     price_mismatch_df = group_df[group_df['min']!=group_df['max']]
     
     inconsistent_df = input_df[input_df['price_uk'].isin(price_mismatch_df.index)]\
-                                 .groupby(['price_uk', 'src_price_id', 'product_name', 'pub_date', 'end_date', 'price_mid'])\
+                                 .groupby(['price_uk', 'ext_price_id', 'product_name', 'pub_date', 'end_date', 'price_mid'])\
                                  ['price_mid'].count()
     
     # Retrieve curves which are inconsistent
-    inconsistent_curves = input_df.loc[input_df['price_uk'].isin(price_mismatch_df.index.values)]['src_price_id']
+    inconsistent_curves = input_df.loc[input_df['price_uk'].isin(price_mismatch_df.index.values)]['ext_price_id']
     
     return inconsistent_df, inconsistent_curves
 
@@ -453,7 +434,7 @@ for curve in incost_curves:
       drop_curves.append(curve)
 
 # Drop curves given filter conditions
-endur_df.drop(index=endur_df.loc[endur_df['src_price_id'].isin(drop_curves)].index, inplace=True)
+endur_df.drop(index=endur_df.loc[endur_df['ext_price_id'].isin(drop_curves)].index, inplace=True)
 
 # COMMAND ----------
 
@@ -471,11 +452,12 @@ endur_df.reset_index(drop=True, inplace=True)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3. Create Spark DataFrame and Save prices to silver Delta lake
+# MAGIC ## 3. Save prices to silver Delta lake
 
 # COMMAND ----------
 
-endur_spark_df = spark.createDataFrame(data=endur_df, schema=prices_schema)
+# Convert to Spark DataFrame
+endur_spark_df = spark.createDataFrame(endur_df)
 
 # COMMAND ----------
 
@@ -484,38 +466,10 @@ endur_spark_df = add_ingestion_date(endur_spark_df)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC **Data has now been prepared and processed: Performing upsert into processed delta table.**
-
-# COMMAND ----------
-
-merge_condition = 'tgt.price_uk = src.price_uk' # merge based on identical unique keys
-merge_delta_silver(endur_spark_df, 'prices_processed', 'endur_prices', silver_folder_path, merge_condition, 'pub_date')
+# Write to Delta table
+endur_spark_df.write.format("delta").mode("overwrite").saveAsTable("prices_processed.endur_prices")
 
 # COMMAND ----------
 
 # command to end notebook execution
 dbutils.notebook.exit("Success")
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT *
-# MAGIC FROM prices_processed.endur_prices
-# MAGIC WHERE location_name = 'NBP'
-# MAGIC LIMIT 5;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT currency, unit, MIN(price_mid), MAX(price_mid), AVG(price_mid)
-# MAGIC FROM prices_processed.endur_prices
-# MAGIC GROUP BY currency, unit;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT price_uk
-# MAGIC FROM prices_processed.endur_prices
-# MAGIC WHERE price_mid = 0 --candidates for removal in Endur
-# MAGIC ORDER BY src_price_id ASC;
