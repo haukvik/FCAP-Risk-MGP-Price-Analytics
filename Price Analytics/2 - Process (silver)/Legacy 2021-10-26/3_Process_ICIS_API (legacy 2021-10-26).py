@@ -65,7 +65,7 @@ print('Index prices:', ind_soup.find('returned-count').text)
 
 def get_ass_details(xml_entry):
     price_dict = {'commodity_type': [price.find('c_series.commodity.name').text],
-                     'src_last_update': [price.find('updated').text],
+                     'last_update': [price.find('updated').text],
                      'pub_date': [price.find('c_series-order').text],
                      'price_mid': [price.find('mid').text],
                      'price_offer':[ price.find('assessment-high').text],
@@ -81,7 +81,7 @@ def get_ass_details(xml_entry):
                      'methodology': [price.find('c_series.methodology.name').text],
                      'quote_approach': [price.find('c_series.quote-approach.name').text],
                      'transaction_type': [price.find('c_series.transaction-type.name').text],
-                     'src_price_id': [price.find('id').text]}
+                     'price_id': [price.find('id').text]}
     price_df = pd.DataFrame.from_dict(price_dict)
     return price_df
 
@@ -90,7 +90,7 @@ def get_ass_details(xml_entry):
 def get_ind_details(xml_entry):
     """Method to extract the data from each xml entry into a dictionary and return the result as a dataframe"""
     price_dict = {'commodity_type': [price.find('c_series.commodity.name').text],
-                     'src_last_update': [price.find('updated').text],
+                     'last_update': [price.find('updated').text],
                      'pub_date': [price.find('c_series-order').text],
                      'price_mid': [price.find('mid').text],
                      'start_date': [price.find('start-date').text],
@@ -100,7 +100,7 @@ def get_ind_details(xml_entry):
                      'unit': [price.find('c_series.size-unit.name').text],
                      'location_name': [price.find('c_series.location.name').text],
                      'publication_name': [price.find('c_series.publication.name').text],
-                     'src_price_id': [price.find('id').text]}
+                     'price_id': [price.find('id').text]}
     price_df = pd.DataFrame.from_dict(price_dict)
     return price_df
 
@@ -248,7 +248,7 @@ def fetch_ind_info(priceid):
     # Returning the dataframe
     return price_info_df
   
-ind_info_df = fetch_ind_info(ind_df['src_price_id'])
+ind_info_df = fetch_ind_info(ind_df['price_id'])
 ind_df['product_name'] = ind_info_df['product_name']
 ind_df['period_duration'] = ind_info_df['period_duration']
 ind_df['period_rel'] = ind_info_df['period_rel']
@@ -279,7 +279,7 @@ icis_df['currency'] = icis_df['currency'].apply(lambda x: 'GBp' if 'Pence' in x 
 icis_df['pub_date'] = icis_df['pub_date'].astype('datetime64[ns]')
 icis_df['start_date'] = icis_df['start_date'].astype('datetime64[ns]')
 icis_df['end_date'] = icis_df['end_date'].astype('datetime64[ns]')
-icis_df['src_last_update'] = icis_df['src_last_update'].astype('datetime64[ns]')
+icis_df['last_update'] = icis_df['last_update'].astype('datetime64[ns]')
 icis_df['pub_date'] = icis_df['pub_date'].dt.normalize()
 icis_df['start_date'] = icis_df['start_date'].dt.normalize()
 icis_df['end_date'] = icis_df['end_date'].dt.normalize()
@@ -288,6 +288,7 @@ icis_df['end_date'] = icis_df['end_date'].dt.normalize()
 icis_df.drop(icis_df.loc[(icis_df['period_abs']=='BOM') & ((icis_df['pub_date'].dt.month) < (icis_df['end_date'].dt.month))].index, axis=0, inplace=True)
 
 icis_df['data_source'] = v_datasource_name # Defining what is the data source
+icis_df.rename(columns={"price_id": "ext_price_id"}, inplace=True)
 
 # COMMAND ----------
 
@@ -305,8 +306,8 @@ icis_df['price_uk'] = (icis_df['publication_name'] + '/'
 
 # COMMAND ----------
 
-# More QA may be required to identify when duplicate values occur, and which to keep:
-# icis_df.loc[(icis_df.duplicated(subset='price_uk', keep=False))]
+# DO MORE QA ON DUPLICATED ROWS TO FIND WHAT IS THE DUPLICATED VALUE
+#icis_df.loc[(icis_df.duplicated(subset='price_uk', keep=False))]
 
 # COMMAND ----------
 
@@ -318,7 +319,7 @@ icis_df = icis_df[['price_uk', 'publication_name', 'data_source', 'commodity_typ
                    'product_name', 'location_name', 'pub_date', 'period_rel', 'period_abs', 
                    'period_duration', 'start_date', 'end_date', 
                    'price_bid', 'price_mid', 'price_offer', 
-                   'currency', 'unit', 'src_last_update', 'src_price_id']]
+                   'currency', 'unit', 'last_update', 'ext_price_id']]
 
 # Resetting index
 icis_df.reset_index(drop=True, inplace=True)
@@ -330,28 +331,26 @@ icis_df.reset_index(drop=True, inplace=True)
 
 # COMMAND ----------
 
-# Create Spark DataFrame with prices schema
-icis_spark_df = spark.createDataFrame(data=icis_df, schema=prices_schema)
-
-# COMMAND ----------
-
-# Add ingestion date
+# Convert to Spark DataFrame & add ingestion date
+icis_spark_df = spark.createDataFrame(icis_df)
 icis_spark_df = add_ingestion_date(icis_spark_df)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC **Data has now been prepared and processed: Performing upsert into processed delta table.**
-
-# COMMAND ----------
-
-merge_condition = 'tgt.price_uk = src.price_uk' # merge based on identical unique keys
-merge_delta_silver(icis_spark_df, 'prices_processed', 'icis_esgm_prices', silver_folder_path, merge_condition, 'pub_date')
+# Write to Delta table
+icis_spark_df.write.format("delta").mode("overwrite").saveAsTable("prices_processed.icis_esgm_prices")
 
 # COMMAND ----------
 
 # command to end notebook execution
 dbutils.notebook.exit("Success")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT *
+# MAGIC FROM prices_processed.icis_esgm_prices
+# MAGIC LIMIT 10
 
 # COMMAND ----------
 

@@ -62,7 +62,7 @@ for spot_file in spot_files:
         print('Error with this csv file:', csv_file)
     df = df.loc[df['idx_code'].isin(['ST', 'SP', 'IL'])] # select only price codes "SP" and "IL"
     df['pub_date'] = df.iloc[0,1] # reading publication day from the first row
-    df['src_last_update'] = df.iloc[0,2] # reading last update from the first row
+    df['last_update'] = df.iloc[0,2] # reading last update from the first row
     df.drop(df[df['idx_code'] == 'ST'].index, inplace=True) # dropping unnecessary rows
     li.append(df) #adding the data to the price data object
 
@@ -85,6 +85,9 @@ spot_df['period_rel'] = spot_df['period_rel'].apply(lambda x: 'WKD' if 'WEEKEND'
 spot_df['product_name'] = spot_df['product_name'].apply(lambda x: 'EGSI' if 'EGSI' in x else 'EOD')
 spot_df.drop('idx_code', axis=1, inplace=True)
 
+# Converting the unit; EEX quotes products as GBP although they are actually GBp
+spot_df['price_unit'].replace("GBP/thm", "GBp/th", inplace=True)
+
 # Formatting dates for entire dataset
 spot_df['pub_date'] = spot_df['pub_date'].astype('datetime64[ns]')
 spot_df['pub_date'] = spot_df['pub_date'].dt.normalize()
@@ -92,20 +95,20 @@ spot_df['start_date'] = spot_df['start_date'].astype('datetime64[ns]')
 spot_df['start_date'] = spot_df['start_date'].dt.normalize()
 spot_df['end_date'] = spot_df['end_date'].astype('datetime64[ns]')
 spot_df['end_date'] = spot_df['end_date'].dt.normalize()
-spot_df['src_last_update'] = spot_df['src_last_update'].astype('datetime64[ns]')
+spot_df['last_update'] = spot_df['last_update'].astype('datetime64[ns]')
 
 # Creating new column to indicate this is Spot (since it's spot data files we are loading)
 spot_df['product_type'] = 'Spot'
 
-spot_df['period_abs'] = '' # Add later if required
+spot_df['period_abs'] = '' # Spot products are relative, not absolute
 spot_df['period_duration'] = spot_df['period_rel'].apply(lambda x: 'Day' if 'DA01' in x else 'Weekend')
 
-# EEX's Spot prices have an end date the day after the delivery (i.e. not the last day of delivery). Changing this:
+# EEX Spot prices' end date is actually the day after delivery; fixing this:
 spot_df['end_date'] = spot_df['end_date'].apply(lambda x: x - timedelta(1))
 
 # Rearrange columns
 spot_df = spot_df[['product_type', 'product_name', 'location_name', 'period_rel', 'period_abs', 'period_duration',
-                   'pub_date', 'start_date', 'end_date', 'price_mid', 'price_unit', 'src_last_update']]
+                   'pub_date', 'start_date', 'end_date', 'price_mid', 'price_unit', 'last_update']]
 print(' -Spot prices cleaned.')
 
 # COMMAND ----------
@@ -130,7 +133,7 @@ for derivative_file in derivative_files:
     df = pd.read_csv(derivative_file, sep=";", header=None, decimal=",", comment='#', skiprows=8, usecols=[0,2,3,4,5,14,15], names=fut_colnames)
     df_pubinfo = pd.read_csv(derivative_file, sep=";", header=None, skiprows=7, nrows=1) # dataframe for collecting publication details from 1 row
     df['pub_date'] = df_pubinfo.iloc[0,1]
-    df['src_last_update'] = df_pubinfo.iloc[0,2]
+    df['last_update'] = df_pubinfo.iloc[0,2]
     df['location_name'] = derivative_file.rsplit("_")[-2] # Assigning the hub name of the product based on the file name
     li.append(df) #adding the data to the price data object
 
@@ -154,8 +157,9 @@ futures_df = futures_df.loc[futures_df['idx_code'] == 'PR']
 futures_df.drop('idx_code', axis=1, inplace=True)
 
 # Dropping OTF futures and NR rows (duplicates)
-futures_df.drop(futures_df.loc[futures_df['product_name'].str.contains('otf', case=False)].index, axis=0, inplace=True) # not in scope
+futures_df.drop(futures_df.loc[futures_df['product_name'].str.contains('otf', case=False)].index, axis=0, inplace=True)
 futures_df.drop(futures_df.loc[futures_df['product_name'].str.startswith('NR')].index, axis=0, inplace=True) # Dropping NR rows (duplicates)
+futures_df['price_unit'].replace("GBP/thm", "GBP/therm", inplace=True)
 
 # Convert price from string to float, keep at 4 decimals (safeguard)
 futures_df['price_mid'] = pd.to_numeric(futures_df['price_mid'].apply(lambda x: re.sub(',', '.', str(x)))).round(4)
@@ -168,6 +172,7 @@ def find_granularity(row):
 
 futures_df['period_duration'] = futures_df['product_name'].apply(find_granularity) # Setting the granularity (product duration)
 futures_df['period_rel'] = '' # we do not know the relative period without a trading calendar
+#futures_df['rel_period'] = futures_df['product'].apply(lambda x: )
 futures_df['product_name'] = 'Settlement' # Defining these futures products as settlements
 futures_df['product_type'] = 'Futures' # Making a column to indicate these are futures instruments
 
@@ -178,11 +183,11 @@ futures_df['start_date'] = futures_df['start_date'].astype('datetime64[ns]')
 futures_df['start_date'] = futures_df['start_date'].dt.normalize()
 futures_df['end_date'] = futures_df['end_date'].astype('datetime64[ns]')
 futures_df['end_date'] = futures_df['end_date'].dt.normalize()
-futures_df['src_last_update'] = futures_df['src_last_update'].astype('datetime64[ns]')
+futures_df['last_update'] = futures_df['last_update'].astype('datetime64[ns]')
 
 # Restructuring columns and adding to dataframe for all eex prices:
 futures_df = futures_df[['product_type', 'product_name', 'location_name', 'period_rel', 'period_abs', 'period_duration', 
-                         'pub_date', 'start_date', 'end_date', 'price_mid', 'price_unit', 'src_last_update']]
+                         'pub_date', 'start_date', 'end_date', 'price_mid', 'price_unit', 'last_update']]
 
 print(' -Futures prices cleaned.')
 
@@ -226,14 +231,10 @@ eex_df['data_source'] = v_datasource_name
 eex_df['commodity_type'] = 'Natural Gas'
 eex_df['price_bid'] = np.nan # Defining as NULL; Not available in source
 eex_df['price_offer'] = np.nan # Defining as NULL; Not available in source
-eex_df['src_price_id'] = '' # Defining as NULL; no external ID
+eex_df['ext_price_id'] = '' # Defining as NULL; no external ID
 
 # Sometimes EEX hub naming is inconsistent, fixing:
 #eex_df['location_name'].replace("Gaspool", "GPL", inplace=True)
-
-# Wrong currency units: EEX confuses GBP (pounds) with GBp (pence) -- correcting this (actual price is always p/therm)
-eex_df['price_unit'].replace("GBP/thm", "GBp/therm", inplace=True)
-eex_df['price_unit'].replace("p/thm", "GBp/therm", inplace=True)
 
 # Splitting currency and delivery unit
 eex_df['currency'] = eex_df['price_unit'].apply(lambda x: x.split("/")[0]) # selecting first element as currency
@@ -260,7 +261,7 @@ eex_df = eex_df[['price_uk', 'publication_name', 'data_source', 'commodity_type'
                  'product_name', 'location_name', 'pub_date', 'period_rel', 'period_abs', 
                  'period_duration', 'start_date', 'end_date', 
                  'price_bid', 'price_mid', 'price_offer', 
-                 'currency', 'unit', 'src_last_update', 'src_price_id']]
+                 'currency', 'unit', 'last_update', 'ext_price_id']]
 
 # Resetting index
 eex_df.reset_index(drop=True, inplace=True)
@@ -273,31 +274,18 @@ eex_df.reset_index(drop=True, inplace=True)
 # COMMAND ----------
 
 # Convert to Spark DataFrame
-eex_spark_df = spark.createDataFrame(data=eex_df, schema=prices_schema)
+eex_spark_df = spark.createDataFrame(eex_df)
 
 # COMMAND ----------
 
-# Add ingestion date
 eex_spark_df = add_ingestion_date(eex_spark_df)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC **Data has now been prepared and processed: Performing upsert into processed delta table.**
-
-# COMMAND ----------
-
-merge_condition = 'tgt.price_uk = src.price_uk' # merge based on identical unique keys
-merge_delta_silver(eex_spark_df, 'prices_processed', 'eex_prices', silver_folder_path, merge_condition, 'pub_date')
+# Write to Delta table
+eex_spark_df.write.format("delta").mode("overwrite").saveAsTable("prices_processed.eex_prices")
 
 # COMMAND ----------
 
 # command to end notebook execution
 dbutils.notebook.exit("Success")
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT *
-# MAGIC FROM prices_processed.eex_prices
-# MAGIC LIMIT 5;

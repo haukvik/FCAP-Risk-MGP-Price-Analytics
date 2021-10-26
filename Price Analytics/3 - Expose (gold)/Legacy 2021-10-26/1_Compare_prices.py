@@ -2,8 +2,9 @@
 # MAGIC %md
 # MAGIC # Price Comparison
 # MAGIC ---
-# MAGIC This part of the process compares the trading system (Endur) prices vs the published indices (external sources).  
+# MAGIC This part of the process compares the prices of the published indices.  
 # MAGIC 
+# MAGIC For now, that means Endur vs the Price Reporting Agency.
 # MAGIC 
 # MAGIC ---
 
@@ -71,11 +72,9 @@ compare_general_sql = f"""
           WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) <= {mismatch_threshold} THEN 'True (rounding diff)'
           ELSE 'False'
           END AS price_match
-        ,endur.src_price_id endur_curve
+        ,endur.ext_price_id endur_curve
         ,endur.unit
         ,endur.currency
-        ,endur.price_uk endur_price_uk
-        ,ext.price_uk ext_price_uk
   FROM ngprices endur
   INNER JOIN ngprices ext
     ON endur.price_uk = ext.price_uk
@@ -106,11 +105,9 @@ compare_weekend_sql = f"""
           WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) <= {mismatch_threshold} THEN 'True (rounding diff)'
           ELSE 'False'
           END AS price_match
-        ,endur.src_price_id endur_curve
+        ,endur.ext_price_id endur_curve
         ,endur.unit
         ,endur.currency
-        ,endur.price_uk endur_price_uk
-        ,ext.price_uk ext_price_uk
   FROM ngprices endur
   INNER JOIN ngprices ext -- join on almost everything except duration
     ON endur.pub_date = ext.pub_date
@@ -150,11 +147,9 @@ compare_da_wsi_sql = f"""
           WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) <= {mismatch_threshold} THEN 'True (rounding diff)'
           ELSE 'False'
           END AS price_match
-        ,endur.src_price_id endur_curve
+        ,endur.ext_price_id endur_curve
         ,endur.unit
         ,endur.currency
-        ,endur.price_uk endur_price_uk
-        ,ext.price_uk ext_price_uk
   FROM ngprices endur
   INNER JOIN ngprices ext -- join on almost everything except duration
     ON endur.pub_date = ext.pub_date
@@ -201,19 +196,8 @@ publish_comparison_DF = full_comparison_DF.drop_duplicates()
 
 # COMMAND ----------
 
-# Add comparison timestamp
-from pyspark.sql.functions import current_timestamp
-publish_comparison_DF = publish_comparison_DF.withColumn('comparison_date', current_timestamp())
-
-# COMMAND ----------
-
-display(publish_comparison_DF)
-
-# COMMAND ----------
-
-# Performing upsert into exposed comparison table
-merge_condition = 'tgt.endur_price_uk = src.endur_price_uk AND tgt.ext_price_uk = src.ext_price_uk' # merge based on identical unique keys
-merge_delta_gold(publish_comparison_DF, 'prices_exposed', 'compared_prices', gold_folder_path, merge_condition, 'pub_date')
+# Write to Delta table
+publish_comparison_DF.write.format("delta").mode("overwrite").saveAsTable("prices_exposed.compared_prices")
 
 # COMMAND ----------
 
