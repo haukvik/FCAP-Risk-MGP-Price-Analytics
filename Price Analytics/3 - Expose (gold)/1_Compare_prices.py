@@ -49,7 +49,8 @@ ngprices_DF.createOrReplaceTempView('ngprices')
 # COMMAND ----------
 
 # We define a threshold value to identify mismatches
-mismatch_threshold = 0.0005 # this is typically the threshold for rounding differences
+mismatch_threshold = 0.00051 # this is typically the threshold for rounding differences
+mismatch_decimals = 6
 
 # COMMAND ----------
 
@@ -65,10 +66,10 @@ compare_general_sql = f"""
         ,DATE(endur.end_date) price_end_date
         ,ROUND(endur.price_mid,6) endur_mid_price
         ,ext.price_mid ext_mid_price
-        ,ROUND(ABS(endur.price_mid - ext.price_mid),6) mid_price_diff
+        ,ROUND(ABS(endur.price_mid - ext.price_mid),5) mid_price_diff
         ,CASE 
-          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) = 0 THEN 'True'
-          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) <= {mismatch_threshold} THEN 'True (rounding diff)'
+          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),{mismatch_decimals}) = 0 THEN 'True'
+          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),{mismatch_decimals}) <= {mismatch_threshold} THEN 'True (rounding diff)'
           ELSE 'False'
           END AS price_match
         ,endur.src_price_id endur_curve
@@ -102,8 +103,8 @@ compare_weekend_sql = f"""
         ,ext.price_mid ext_mid_price
         ,ROUND(ABS(endur.price_mid - ext.price_mid),6) mid_price_diff
         ,CASE 
-          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) = 0 THEN 'True'
-          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) <= {mismatch_threshold} THEN 'True (rounding diff)'
+          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),{mismatch_decimals}) = 0 THEN 'True'
+          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),{mismatch_decimals}) <= {mismatch_threshold} THEN 'True (rounding diff)'
           ELSE 'False'
           END AS price_match
         ,endur.src_price_id endur_curve
@@ -146,8 +147,8 @@ compare_da_wsi_sql = f"""
         ,ext.price_mid ext_mid_price
         ,ROUND(ABS(endur.price_mid - ext.price_mid),6) mid_price_diff
         ,CASE 
-          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) = 0 THEN 'True'
-          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),6) <= {mismatch_threshold} THEN 'True (rounding diff)'
+          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),{mismatch_decimals}) = 0 THEN 'True'
+          WHEN ROUND(ABS(endur.price_mid - ext.price_mid),{mismatch_decimals}) <= {mismatch_threshold} THEN 'True (rounding diff)'
           ELSE 'False'
           END AS price_match
         ,endur.src_price_id endur_curve
