@@ -71,8 +71,18 @@ print(' -Spot prices loaded.')
 
 # COMMAND ----------
 
+spot_df
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### SPOT DATA WRANGLING
+
+# COMMAND ----------
+
+# The data may contain EEX prices that are not published yet. 
+# To cater for this, drop NaNs or remove prices that are not yet published
+spot_df.dropna(axis=0, how='any', subset=['price_mid'], inplace=True)
 
 # COMMAND ----------
 
@@ -301,3 +311,7 @@ dbutils.notebook.exit("Success")
 # MAGIC SELECT *
 # MAGIC FROM prices_processed.eex_prices
 # MAGIC LIMIT 5;
+
+# COMMAND ----------
+
+
