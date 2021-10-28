@@ -208,7 +208,9 @@ publish_comparison_DF = publish_comparison_DF.withColumn('comparison_date', curr
 
 # COMMAND ----------
 
-display(publish_comparison_DF)
+# MAGIC %md
+# MAGIC ### Save comparison result to delta table
+# MAGIC This is for operational Risk and IT to verify price correctness.
 
 # COMMAND ----------
 
@@ -227,6 +229,66 @@ dbutils.fs.mkdirs(f'{powerbi_path}/000')
 # PowerBI expects a given file name; converting to pandas first to enable this export criterion
 powerbi_export_df = publish_comparison_DF.toPandas()
 powerbi_export_df.to_parquet(path=f'/dbfs{powerbi_path}/ng_compared_prices.parquet')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Save new mismatches to delta table
+# MAGIC This is for management reporting. 
+# MAGIC 
+# MAGIC The first run every morning reports the number of prices, including possible mismatches. Any corrections during the day are not included in this report.
+
+# COMMAND ----------
+
+from pyspark.sql.functions import count, when, col, lit, sum, max, date_format
+
+# COMMAND ----------
+
+# creating the report
+price_report_DF = publish_comparison_DF\
+  .select(date_format(max('comparison_date'), 'yyyy-MM-dd').alias('comparison_date')\
+         ,count('*').alias('no_prices_compared')\
+         ,count(when(publish_comparison_DF.price_match == 'True', 1)).alias('no_price_matches')\
+         ,count(when(publish_comparison_DF.price_match == 'True (rounding diff)', 1)).alias('no_price_matches_with_rounding_diff')\
+         ,count(when(publish_comparison_DF.price_match == 'False', 1)).alias('no_price_mismatches')
+         )
+
+# COMMAND ----------
+
+# defining delta merge function to merge on comparison_date, which only inserts new entries
+
+def update_daily_price_report(input_df, db_name, table_name, folder_path, merge_condition, partition_column):
+  spark.conf.set("spark.databricks.optimizer.dynamicPartitionPruning", "true")
+
+  from delta.tables import DeltaTable
+  
+  if (spark._jsparkSession.catalog().tableExists(f"{db_name}.{table_name}")): # if table already exists, upsert merge
+    deltaTable = DeltaTable.forPath(spark, f"{folder_path}/{table_name}")
+    deltaTable.alias("tgt").merge(
+        input_df.alias("src"),
+        merge_condition)\
+      .whenNotMatchedInsertAll()\
+      .execute()
+  else: # if table does not exist, write directly
+    input_df.write.mode("overwrite").partitionBy(partition_column).format("delta").saveAsTable(f"{db_name}.{table_name}")
+
+# COMMAND ----------
+
+# inserting new comparisons
+merge_condition = 'tgt.comparison_date = src.comparison_date'
+update_daily_price_report(price_report_DF, 'prices_exposed', 'daily_price_report', gold_folder_path, merge_condition, 'comparison_date')
+
+# COMMAND ----------
+
+# Write to parquet for PowerBI expose
+
+# Create folder for PowerBI reporting
+powerbi_path = f'{gold_folder_path}/powerbi_reports'
+dbutils.fs.mkdirs(f'{powerbi_path}/000')
+
+# PowerBI expects a given file name; converting to pandas first to enable this export criterion
+powerbi_export_df = spark.read.table('prices_exposed.daily_price_report').toPandas()
+powerbi_export_df.to_parquet(path=f'/dbfs{powerbi_path}/ng_daily_price_report.parquet')
 
 # COMMAND ----------
 
