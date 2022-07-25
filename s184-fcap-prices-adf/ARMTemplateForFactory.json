@@ -509,7 +509,8 @@
 					"newClusterVersion": "9.1.x-scala2.12",
 					"newClusterInitScripts": [
 						"dbfs:/databricks/scripts/init_script_prices_job_cluster.sh"
-					]
+					],
+					"clusterOption": "Fixed"
 				}
 			},
 			"dependsOn": []

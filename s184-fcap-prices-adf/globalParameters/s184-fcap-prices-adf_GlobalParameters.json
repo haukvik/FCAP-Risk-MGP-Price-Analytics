@@ -1,6 +1,6 @@
 {
 	"days_to_retrieve": {
 		"type": "int",
-		"value": 5
+		"value": 20
 	}
 }
