@@ -310,7 +310,8 @@ dbutils.notebook.exit("Success")
 # MAGIC %sql
 # MAGIC SELECT *
 # MAGIC FROM prices_processed.eex_prices
-# MAGIC LIMIT 5;
+# MAGIC WHERE location_name = 'TTF' AND product_type = 'Spot' AND pub_date = '2021-10-26'
+# MAGIC ORDER BY pub_date;
 
 # COMMAND ----------
 

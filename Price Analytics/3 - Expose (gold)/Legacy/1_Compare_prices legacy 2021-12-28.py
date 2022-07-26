@@ -212,12 +212,6 @@ display(publish_comparison_DF)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ### Save comparison result to delta table
-# MAGIC This is for operational Risk and IT to verify price correctness.
-
-# COMMAND ----------
-
 # Performing upsert into exposed comparison table
 merge_condition = 'tgt.endur_price_uk = src.endur_price_uk AND tgt.ext_price_uk = src.ext_price_uk' # merge based on identical unique keys
 merge_delta_gold(publish_comparison_DF, 'prices_exposed', 'compared_prices', gold_folder_path, merge_condition, 'pub_date')
@@ -233,32 +227,6 @@ dbutils.fs.mkdirs(f'{powerbi_path}/000')
 # PowerBI expects a given file name; converting to pandas first to enable this export criterion
 powerbi_export_df = publish_comparison_DF.toPandas()
 powerbi_export_df.to_parquet(path=f'/dbfs{powerbi_path}/ng_compared_prices.parquet')
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Save new mismatches to delta table
-# MAGIC This is for management reporting.
-
-# COMMAND ----------
-
-display(publish_comparison_DF.filter("price_match = False"))
-
-# COMMAND ----------
-
-publish_comparison_DF.createOrReplaceTempView('compared_prices_summary')
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT comparison_date, 
-# MAGIC   COUNT(*) AS total_prices,
-# MAGIC   SUM(CASE price_match WHEN 'True' THEN 1 ELSE 0 END) AS correct_prices,
-# MAGIC   SUM(CASE price_match WHEN 'True (rounding diff)' THEN 1 ELSE 0 END) AS rounding_diff_prices,
-# MAGIC   SUM(CASE price_match WHEN 'False' THEN 1 ELSE 0 END) AS incorrect_prices
-# MAGIC FROM compared_prices_summary
-# MAGIC GROUP BY comparison_date
-# MAGIC ORDER BY comparison_date;
 
 # COMMAND ----------
 
