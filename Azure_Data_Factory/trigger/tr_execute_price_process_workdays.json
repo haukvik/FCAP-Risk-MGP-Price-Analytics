@@ -4,17 +4,7 @@
 		"description": "Executes the price process during working days",
 		"annotations": [],
 		"runtimeState": "Started",
-		"pipelines": [
-			{
-				"pipelineReference": {
-					"referenceName": "pl_execute_price_process",
-					"type": "PipelineReference"
-				},
-				"parameters": {
-					"p_process_date": "@trigger().startTime"
-				}
-			}
-		],
+		"pipelines": [],
 		"type": "ScheduleTrigger",
 		"typeProperties": {
 			"recurrence": {
